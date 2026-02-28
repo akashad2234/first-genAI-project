@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+
+# Local data (HF dataset can be very large)
+data/
+
+# PowerShell artifacts
+*.clixml
+
+# Python/Node (future phases)
+__pycache__/
+node_modules/
+.venv/
+

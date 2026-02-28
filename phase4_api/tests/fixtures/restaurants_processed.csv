@@ -1,0 +1,25 @@
+id,name,std_city,std_locality,std_rating,std_price_bucket,std_cuisines
+123,La Piazza,Bangalore,Indiranagar,4.4,medium,italian|pizza
+456,Budget Bites,Bangalore,Koramangala,4.0,low,indian|fast food
+789,Sushi Zen,Bangalore,Indiranagar,4.6,premium,japanese|sushi
+321,Pizza House,Bangalore,HSR Layout,4.2,medium,pizza|italian
+101,MTR,Bangalore,Jayanagar,4.8,medium,south indian|breakfast
+102,Toit,Bangalore,Indiranagar,4.5,premium,continental|craft beer
+103,Meghana Foods,Bangalore,Koramangala,4.3,low,andhra|biryani
+104,Chutney Chang,Bangalore,Whitefield,4.1,medium,chinese|pan asian
+105,Empire Restaurant,Bangalore,HSR Layout,4.0,low,biryani|moghul
+106,CTR,Bangalore,Malleshwaram,4.7,low,south indian|breakfast
+107,Farzi Cafe,Bangalore,UB City MG Road,4.4,premium,indian|molecular
+108,Brik Oven,Bangalore,Koramangala,4.3,medium,italian|wood fired pizza
+109,Shanghai Express,Bangalore,Indiranagar,3.9,medium,chinese|noodles
+110,Karavalli,Bangalore,Residency Road,4.6,premium,south indian|coastal
+111,Chili's,Bangalore,Whitefield,4.2,medium,american|burgers
+112,Chai Point,Bangalore,Electronic City,3.8,low,beverages|snacks
+113,Smoke House Deli,Bangalore,Indiranagar,4.1,premium,continental|cafe
+114,Bikanerwala,Bangalore,BTM Layout,3.7,low,north indian|sweets
+115,Barbeque Nation,Bangalore,Marathahalli,4.0,medium,bbq|indian
+116,The Permit Room,Bangalore,Indiranagar,4.5,premium,bar food|continental
+117,Adyar Ananda Bhavan,Bangalore,Jayanagar,4.2,low,south indian|vegetarian
+118,Dominos,Bangalore,HSR Layout,3.9,low,pizza|fast food
+119,Mainland China,Bangalore,Whitefield,4.3,premium,chinese|pan asian
+120,Third Wave Coffee,Bangalore,Koramangala,4.4,medium,cafe|beverages

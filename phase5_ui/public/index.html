@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Restaurant Recommendations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --zomato-red: #E23744;
+      --zomato-red-dark: #CB202D;
+      --zomato-red-soft: rgba(226, 55, 68, 0.12);
+      --bg: #000000;
+      --bg-card: #FFFFFF;
+      --bg-input: #FFFFFF;
+      --border: #E8E8E8;
+      --text-main: #1C1C1C;
+      --text-muted: #6B7280;
+      --text-light: #9CA3AF;
+      --danger: #DC2626;
+      --rating-bg: #267E3E;
+      --shadow: 0 1px 3px rgba(0,0,0,0.12);
+      --shadow-card: 0 2px 12px rgba(0,0,0,0.2);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: #FFFFFF;
+      padding: 0 16px 32px;
+    }
+
+    /* Header – centered */
+    .header {
+      text-align: center;
+      padding: 28px 16px 24px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .header h1 {
+      margin: 0 0 6px;
+      font-size: 26px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+    }
+    .header p {
+      margin: 0;
+      font-size: 14px;
+      color: rgba(255,255,255,0.9);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.85);
+      padding: 4px 10px;
+      background: rgba(0,0,0,0.2);
+      border: 1px solid rgba(255,255,255,0.4);
+      border-radius: 999px;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #FFFFFF;
+    }
+
+    /* Preferences – red card */
+    .prefs-section {
+      max-width: 720px;
+      margin: 0 auto 24px;
+      background: var(--zomato-red);
+      border-radius: 16px;
+      padding: 20px 22px 22px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .prefs-section h2 {
+      margin: 0 0 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+    .prefs-section .field label {
+      color: rgba(255,255,255,0.95);
+    }
+    .prefs-section .hint {
+      color: rgba(255,255,255,0.8);
+    }
+    .prefs-section .field input,
+    .prefs-section .field select {
+      border-color: rgba(255,255,255,0.5);
+      background: #FFFFFF;
+      color: var(--text-main);
+    }
+    .prefs-section .field input:focus,
+    .prefs-section .field select:focus {
+      border-color: #FFFFFF;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
+    }
+    .prefs-section .btn {
+      background: rgba(255,255,255,0.2);
+      color: #FFFFFF;
+      border-color: rgba(255,255,255,0.5);
+    }
+    .prefs-section .btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    .prefs-section .btn-primary {
+      background: #FFFFFF;
+      color: var(--zomato-red);
+      border-color: #FFFFFF;
+    }
+    .prefs-section .btn-primary:hover {
+      background: rgba(255,255,255,0.95);
+      border-color: rgba(255,255,255,0.95);
+    }
+    .prefs-section .status-line {
+      color: rgba(255,255,255,0.9);
+    }
+    .prefs-section .status-error {
+      color: #FFCCCB;
+    }
+    .prefs-section .status-ok {
+      color: #90EE90;
+    }
+    .prefs-section .error-detail {
+      background: rgba(0,0,0,0.35);
+      color: #FFCCCB;
+      border-color: rgba(255,255,255,0.4);
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px 18px;
+    }
+    @media (max-width: 600px) {
+      .field-grid { grid-template-columns: 1fr; }
+    }
+    .field-full { grid-column: 1 / -1; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .field input,
+    .field select {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text-main);
+      padding: 10px 12px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .field select[multiple] {
+      min-height: 100px;
+      padding: 8px;
+    }
+    .field select[multiple] option {
+      padding: 6px 8px;
+      border-radius: 6px;
+    }
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--zomato-red);
+      box-shadow: 0 0 0 2px var(--zomato-red-soft);
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+      align-items: center;
+    }
+    .btn {
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      transition: background 0.15s ease, transform 0.08s ease;
+    }
+    .btn-primary {
+      background: var(--zomato-red);
+      color: #FFFFFF;
+      border-color: var(--zomato-red);
+    }
+    .btn-primary:hover { background: var(--zomato-red-dark); border-color: var(--zomato-red-dark); }
+    .btn:hover { background: #EEEEEE; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status-line { font-size: 12px; color: var(--text-muted); margin-top: 8px; min-height: 18px; }
+    .status-error { color: var(--danger); }
+    .status-ok { color: var(--rating-bg); }
+    .error-detail {
+      margin-top: 8px;
+      padding: 10px;
+      font-size: 12px;
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      border-radius: 8px;
+      color: var(--danger);
+      display: none;
+    }
+
+    /* Results – below, full width */
+    .results-section {
+      max-width: 720px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 20px 22px 22px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--border);
+    }
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+    .results-header h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .results-count { font-size: 13px; color: var(--text-muted); }
+    .explanation {
+      font-size: 13px;
+      color: var(--text-main);
+      background: var(--bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 12px 14px;
+      margin-bottom: 14px;
+      white-space: pre-wrap;
+    }
+    .explanation-empty { color: var(--text-muted); font-style: italic; }
+    .card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: none;
+    }
+    .card {
+      border-radius: 12px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px 16px;
+      align-items: start;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.15s ease;
+    }
+    .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card-main h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .card-main .meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .chip {
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .chip-rating {
+      background: var(--rating-bg);
+      color: #FFFFFF;
+      border: none;
+      font-weight: 600;
+    }
+    .chip-price { color: var(--text-main); }
+    .card-side {
+      text-align: right;
+    }
+    .card-side .rating-big {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: var(--rating-bg);
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .empty-state {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-style: italic;
+      padding: 24px 0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1 id="app-title">Restaurant Recommendations</h1>
+    <p>Set your preferences and get AI-powered restaurant suggestions.</p>
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span>Powered by Groq</span>
+    </div>
+  </header>
+
+  <section class="prefs-section" aria-labelledby="preferences-heading">
+    <h2 id="preferences-heading">Preferences</h2>
+    <form id="prefs-form" autocomplete="off">
+      <div class="field-grid">
+        <div class="field">
+          <label for="price">Price</label>
+          <select id="price" name="price">
+            <option value="" selected>Any</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="premium">Premium</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="min-rating">Min rating</label>
+          <input id="min-rating" name="min_rating" type="number" min="0" max="5" step="0.1" value="4" placeholder="e.g. 4 or 4.5" />
+        </div>
+        <div class="field field-full">
+          <label for="location">Place</label>
+          <select id="location" name="location" aria-label="Select place">
+            <option value="">All places</option>
+          </select>
+          <div class="hint">Bangalore areas</div>
+        </div>
+        <div class="field field-full">
+          <label for="cuisines">Cuisine</label>
+          <select id="cuisines" name="cuisines" multiple aria-label="Select cuisines">
+            <option value="">Loading…</option>
+          </select>
+          <div class="hint">Hold Ctrl/Cmd to select multiple</div>
+        </div>
+        <div class="field">
+          <label for="num-results">Results</label>
+          <input id="num-results" name="num_results" type="number" min="1" max="10" value="5" />
+        </div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn" id="btn-reset">Clear</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit">Get recommendations</button>
+      </div>
+      <div class="status-line" id="status-line" aria-live="polite"></div>
+      <div id="error-detail" class="error-detail" aria-live="polite"></div>
+    </form>
+  </section>
+
+  <section class="results-section" aria-labelledby="results-heading">
+    <div class="results-header">
+      <h2 id="results-heading">Recommended for you</h2>
+      <span class="results-count" id="results-count">No results yet</span>
+    </div>
+    <div id="explanation" class="explanation explanation-empty">
+      AI explanation will appear here after you get recommendations.
+    </div>
+    <div id="cards" class="card-list">
+      <div class="empty-state">Submit your preferences to see recommended restaurants.</div>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      const form = document.getElementById('prefs-form');
+      const btnSubmit = document.getElementById('btn-submit');
+      const btnReset = document.getElementById('btn-reset');
+      const statusLine = document.getElementById('status-line');
+      const explanationEl = document.getElementById('explanation');
+      const cardsEl = document.getElementById('cards');
+      const resultsCountEl = document.getElementById('results-count');
+      const locationSelect = document.getElementById('location');
+      const cuisinesSelect = document.getElementById('cuisines');
+
+      function setStatus(message, kind) {
+        statusLine.textContent = message || '';
+        statusLine.classList.remove('status-error', 'status-ok');
+        if (kind === 'error') statusLine.classList.add('status-error');
+        else if (kind === 'ok') statusLine.classList.add('status-ok');
+      }
+
+      function setLoading(isLoading) {
+        btnSubmit.disabled = isLoading;
+        btnSubmit.textContent = isLoading ? 'Finding…' : 'Get recommendations';
+      }
+
+      // Load places
+      fetch('/places')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          const list = d.places || [];
+          locationSelect.innerHTML = '<option value="">All places</option>';
+          list.forEach(function (p) {
+            const opt = document.createElement('option');
+            opt.value = p.label || (p.city && p.locality ? p.city + ', ' + p.locality : p.city || p.locality || '');
+            opt.textContent = opt.value;
+            locationSelect.appendChild(opt);
+          });
+        })
+        .catch(function () {});
+
+      // Load cuisines (picklist)
+      fetch('/cuisines')
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          const list = d.cuisines || [];
+          cuisinesSelect.innerHTML = '';
+          list.forEach(function (c) {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c.charAt(0).toUpperCase() + c.slice(1);
+            cuisinesSelect.appendChild(opt);
+          });
+          if (cuisinesSelect.options.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = 'No cuisines in data';
+            cuisinesSelect.appendChild(opt);
+          }
+        })
+        .catch(function () {
+          cuisinesSelect.innerHTML = '<option value="">Failed to load</option>';
+        });
+
+      function renderEmptyState(message) {
+        cardsEl.innerHTML = '';
+        const div = document.createElement('div');
+        div.className = 'empty-state';
+        div.textContent = message;
+        cardsEl.appendChild(div);
+      }
+
+      function renderExplanation(text, errorMsg) {
+        if (text && String(text).trim().length > 0) {
+          explanationEl.textContent = text;
+          explanationEl.classList.remove('explanation-empty');
+        } else if (errorMsg && String(errorMsg).trim().length > 0) {
+          explanationEl.textContent = 'Groq: ' + String(errorMsg).trim();
+          explanationEl.classList.add('explanation-empty');
+        } else {
+          explanationEl.textContent = 'Recommendations loaded. (No AI explanation if Groq is not configured.)';
+          explanationEl.classList.add('explanation-empty');
+        }
+      }
+
+      function setExplanationError(msg) {
+        explanationEl.textContent = msg || 'Request failed.';
+        explanationEl.classList.add('explanation-empty');
+      }
+
+      function showErrorDetail(msg) {
+        var el = document.getElementById('error-detail');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.display = msg ? 'block' : 'none';
+      }
+
+      function renderCards(restaurants) {
+        cardsEl.innerHTML = '';
+        if (!restaurants || !restaurants.length) {
+          renderEmptyState('No restaurants matched your filters.');
+          resultsCountEl.textContent = '0 results';
+          return;
+        }
+        resultsCountEl.textContent = restaurants.length === 1 ? '1 result' : restaurants.length + ' results';
+
+        restaurants.forEach(function (r) {
+          const card = document.createElement('article');
+          card.className = 'card';
+
+          const main = document.createElement('div');
+          main.className = 'card-main';
+
+          const h3 = document.createElement('h3');
+          h3.textContent = r.name || 'Unknown';
+          main.appendChild(h3);
+
+          const meta = document.createElement('div');
+          meta.className = 'meta';
+          const parts = [];
+          if (r.locality) parts.push(r.locality);
+          if (r.city) parts.push(r.city);
+          meta.textContent = parts.length ? parts.join(', ') : '';
+          main.appendChild(meta);
+
+          const chips = document.createElement('div');
+          chips.className = 'chip-row';
+          if (r.price_bucket) {
+            const chipPrice = document.createElement('span');
+            chipPrice.className = 'chip chip-price';
+            chipPrice.textContent = r.price_bucket;
+            chips.appendChild(chipPrice);
+          }
+          if (Array.isArray(r.cuisines) && r.cuisines.length) {
+            r.cuisines.forEach(function (cu) {
+              const chipC = document.createElement('span');
+              chipC.className = 'chip';
+              chipC.textContent = cu;
+              chips.appendChild(chipC);
+            });
+          }
+          main.appendChild(chips);
+
+          const side = document.createElement('div');
+          side.className = 'card-side';
+          const ratingEl = document.createElement('div');
+          ratingEl.className = 'rating-big';
+          ratingEl.textContent = typeof r.rating === 'number' ? r.rating.toFixed(1) : '–';
+          side.appendChild(ratingEl);
+
+          card.appendChild(main);
+          card.appendChild(side);
+          cardsEl.appendChild(card);
+        });
+      }
+
+      function getSelectedCuisines() {
+        const opts = cuisinesSelect.selectedOptions;
+        const arr = [];
+        for (let i = 0; i < opts.length; i++) {
+          const v = (opts[i].value || '').trim();
+          if (v) arr.push(v);
+        }
+        return arr;
+      }
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        setStatus('', null);
+
+        const payload = {};
+        const price = form.querySelector('#price').value;
+        if (price) payload.price_preference = price;
+
+        const loc = (locationSelect.value || '').trim();
+        if (loc) payload.location = loc;
+
+        const minRatingRaw = form.querySelector('#min-rating').value;
+        if (minRatingRaw !== null && String(minRatingRaw).trim() !== '') {
+          const num = Number(minRatingRaw);
+          if (!Number.isNaN(num)) payload.min_rating = num;
+        }
+
+        const cuisines = getSelectedCuisines();
+        if (cuisines.length) payload.cuisine_preferences = cuisines;
+
+        const numResultsRaw = form.querySelector('#num-results').value;
+        if (numResultsRaw !== null && String(numResultsRaw).trim() !== '') {
+          const num = Number(numResultsRaw);
+          if (!Number.isNaN(num)) payload.num_results = num;
+        }
+
+        setLoading(true);
+        renderEmptyState('Fetching recommendations…');
+        renderExplanation('');
+
+        try {
+          const res = await fetch('/recommendations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error('Server error ' + res.status + ': ' + text);
+          }
+
+          const json = await res.json();
+          renderCards(json.restaurants || []);
+          renderExplanation(json.explanation || '', json.explanation_error || '');
+          if (json.restaurants && json.restaurants.length) {
+            setStatus('Recommendations loaded.', 'ok');
+          } else {
+            setStatus('No results. Try relaxing filters.', 'error');
+          }
+        } catch (err) {
+          console.error(err);
+          setLoading(false);
+          var msg = err && err.message ? err.message : String(err);
+          renderEmptyState('Failed to load recommendations.');
+          setExplanationError('Request failed. See error below.');
+          setStatus('Failed to load recommendations.', 'error');
+          showErrorDetail(msg);
+          return;
+        }
+        setLoading(false);
+      });
+
+      btnReset.addEventListener('click', function () {
+        form.reset();
+        locationSelect.value = '';
+        form.querySelector('#min-rating').value = '4';
+        form.querySelector('#num-results').value = '5';
+        for (let i = 0; i < cuisinesSelect.options.length; i++) cuisinesSelect.options[i].selected = false;
+        setStatus('', null);
+        renderExplanation('');
+        renderEmptyState('Submit your preferences to see recommended restaurants.');
+        resultsCountEl.textContent = 'No results yet';
+        showErrorDetail('');
+      });
+    })();
+  </script>
+</body>
+</html>
