@@ -1,7 +1,9 @@
 """
 Streamlit UI for AI Restaurant Recommendation Service.
-Uses the Phase 4 API (must be running on the configured base URL).
+Uses the Phase 4 API when available; falls back to bundled CSV when API is unreachable (e.g. on Streamlit Cloud).
 """
+import csv
+import os
 import requests
 import streamlit as st
 
@@ -12,12 +14,127 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# Path to fixture CSV: streamlit_app.py is in repo root, CSV in phase4_api/tests/fixtures/
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+FIXTURE_CSV = os.path.join(SCRIPT_DIR, "phase4_api", "tests", "fixtures", "restaurants_processed.csv")
+
 # Default: API running locally
 API_BASE = st.sidebar.text_input(
     "API base URL",
     value="http://localhost:8080",
     help="Phase 4 API must be running on this URL.",
 )
+
+
+def _norm(s):
+    return (s or "").strip().lower().replace("  ", " ")
+
+
+def load_places_cuisines_from_csv():
+    """Load places and cuisines from fixture CSV when API is unavailable. Returns (places, cuisines)."""
+    places = []
+    cuisines_set = set()
+    if not os.path.isfile(FIXTURE_CSV):
+        return places, []
+    try:
+        with open(FIXTURE_CSV, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            seen_places = set()
+            for row in reader:
+                city = (row.get("std_city") or "").strip()
+                locality = (row.get("std_locality") or "").strip()
+                if city or locality:
+                    label = f"{city}, {locality}".strip(", ")
+                    key = (city, locality)
+                    if key not in seen_places:
+                        seen_places.add(key)
+                        places.append({"label": label, "city": city, "locality": locality})
+                raw = row.get("std_cuisines") or ""
+                for part in raw.split("|"):
+                    c = _norm(part)
+                    if c:
+                        cuisines_set.add(c)
+    except Exception:
+        return [], []
+    places.sort(key=lambda p: p["label"])
+    return places, sorted(cuisines_set)
+
+
+def recommendations_from_csv(payload: dict):
+    """Recommendations by filtering the fixture CSV (same logic as Phase 4 API). Returns {restaurants, explanation, explanation_error}."""
+    if not os.path.isfile(FIXTURE_CSV):
+        return {"restaurants": [], "explanation": None, "explanation_error": "CSV not found."}
+    try:
+        with open(FIXTURE_CSV, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+    except Exception as e:
+        return {"restaurants": [], "explanation": None, "explanation_error": str(e)}
+
+    location_raw = _norm(payload.get("location") or "")
+    location_parts = [p for p in location_raw.split(",") if p.strip()] if location_raw else []
+    price_pref = _norm(payload.get("price_preference") or "")
+    min_rating = payload.get("min_rating")
+    if min_rating is not None:
+        try:
+            min_rating = float(min_rating)
+        except (TypeError, ValueError):
+            min_rating = None
+    cuisine_prefs = payload.get("cuisine_preferences") or []
+    if not isinstance(cuisine_prefs, list):
+        cuisine_prefs = [cuisine_prefs] if cuisine_prefs else []
+    cuisine_prefs = [_norm(c) for c in cuisine_prefs if c]
+    num_results = max(1, min(10, int(payload.get("num_results") or 5)))
+
+    filtered = []
+    for r in rows:
+        city = _norm(r.get("std_city") or "")
+        loc = _norm(r.get("std_locality") or "")
+        if location_parts:
+            if not all(
+                (city and p in city) or (loc and p in loc) for p in location_parts
+            ):
+                continue
+        if price_pref and _norm(r.get("std_price_bucket") or "") != price_pref:
+            continue
+        try:
+            rat = float(r.get("std_rating") or 0)
+        except (TypeError, ValueError):
+            rat = 0
+        if min_rating is not None and rat < min_rating:
+            continue
+        if cuisine_prefs:
+            raw_c = (r.get("std_cuisines") or "").split("|")
+            row_cuisines = {_norm(x) for x in raw_c if x}
+            if not any(c in row_cuisines for c in cuisine_prefs):
+                continue
+        filtered.append(r)
+
+    filtered.sort(key=lambda x: (-float(x.get("std_rating") or 0), x.get("name") or ""))
+    top = filtered[:num_results]
+
+    restaurants = []
+    for r in top:
+        cuisines_str = r.get("std_cuisines") or ""
+        cuisines_list = [c.strip() for c in cuisines_str.split("|") if c.strip()]
+        try:
+            rating = float(r.get("std_rating") or 0)
+        except (TypeError, ValueError):
+            rating = None
+        restaurants.append({
+            "id": r.get("id"),
+            "name": r.get("name") or "Unknown",
+            "city": r.get("std_city") or "",
+            "locality": r.get("std_locality") or "",
+            "rating": rating,
+            "price_bucket": r.get("std_price_bucket") or "",
+            "cuisines": cuisines_list,
+        })
+
+    return {
+        "restaurants": restaurants,
+        "explanation": "Recommendations from offline data (API not connected). Start the Phase 4 API for AI explanations.",
+        "explanation_error": None,
+    }
 
 
 def fetch_json(path: str, show_error: bool = True):
@@ -89,7 +206,7 @@ st.sidebar.markdown("---")
 st.title("🍽️ Restaurant Recommendations")
 st.caption("Set your preferences and get AI-powered restaurant suggestions (Groq).")
 
-# Load options from API
+# Load options from API, fallback to CSV when API unreachable
 places_resp = fetch_json("/places", show_error=False)
 if places_resp and "places" in places_resp:
     places = places_resp["places"]
@@ -102,10 +219,20 @@ if cuisines_resp and "cuisines" in cuisines_resp:
 else:
     cuisines = []
 
+# Fallback: load from fixture CSV when API didn't return data (e.g. Streamlit Cloud)
+if not places or not cuisines:
+    csv_places, csv_cuisines = load_places_cuisines_from_csv()
+    if not places:
+        places = csv_places
+    if not cuisines:
+        cuisines = csv_cuisines
+    if places or cuisines:
+        st.sidebar.info("Using offline data (API not connected).")
+
 if not places and not cuisines:
     st.warning(
-        "Could not load places/cuisines. **Start the Phase 4 API** in a separate PowerShell terminal (see sidebar), "
-        "or try **API base URL** = `http://127.0.0.1:8080` instead of localhost. Then click **Retry connection** in the sidebar."
+        "Could not load places/cuisines. Ensure the fixture CSV exists at "
+        "`phase4_api/tests/fixtures/restaurants_processed.csv`, or start the Phase 4 API (see sidebar)."
     )
 
 place_labels = [p.get("label") or f"{p.get('city', '')}, {p.get('locality', '')}".strip(", ") or "Unknown" for p in places]
@@ -160,6 +287,9 @@ if submitted:
 
     with st.spinner("Fetching recommendations…"):
         result = get_recommendations(payload)
+    if result is None:
+        # API unreachable: use CSV fallback so app works on Streamlit Cloud / without API
+        result = recommendations_from_csv(payload)
 
     if result:
         restaurants = result.get("restaurants") or []
