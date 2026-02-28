@@ -1,4 +1,6 @@
 groq
 python-dotenv
 pytest
+requests
+streamlit
 
