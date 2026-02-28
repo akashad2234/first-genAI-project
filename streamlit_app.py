@@ -158,6 +158,7 @@ def check_api_health():
 
 
 def get_recommendations(payload: dict):
+    """Call Phase 4 API for recommendations. Returns None if API unreachable (caller can use CSV fallback)."""
     try:
         r = requests.post(
             f"{API_BASE.rstrip('/')}/recommendations",
@@ -166,13 +167,8 @@ def get_recommendations(payload: dict):
         )
         r.raise_for_status()
         return r.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Request failed: {e}")
-        if hasattr(e, "response") and e.response is not None:
-            try:
-                st.code(e.response.text[:500])
-            except Exception:
-                pass
+    except requests.exceptions.RequestException:
+        # Don't show error here; caller will use CSV fallback and show success
         return None
 
 
