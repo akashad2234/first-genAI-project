@@ -19,31 +19,6 @@ API_BASE = st.sidebar.text_input(
     help="Phase 4 API must be running on this URL.",
 )
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**To fix \"Cannot reach API\"**")
-st.sidebar.markdown("Start the Phase 4 API in a **separate** PowerShell terminal:")
-st.sidebar.code(
-    "cd path\\to\\first-genAI-project\n"
-    "Import-Module .\\phase4_api\\src\\Phase4Api.psm1 -Force\n"
-    "Start-Phase4ApiServer -Port 8080 "
-    "-DataCsvPath \".\\phase4_api\\tests\\fixtures\\restaurants_processed.csv\" "
-    "-StaticRootPath \".\\phase5_ui\\public\" -DotEnvPath \".\\data\\.env\"",
-    language="powershell",
-)
-st.sidebar.markdown("Then refresh this page or click **Get recommendations**.")
-st.sidebar.markdown("---")
-
-# API status
-api_ok = check_api_health()
-if api_ok:
-    st.sidebar.success(f"API OK: {API_BASE.rstrip('/')}")
-else:
-    st.sidebar.error(f"Cannot reach API at {API_BASE}")
-    st.sidebar.markdown("Try **http://127.0.0.1:8080** if you use **localhost**.")
-if st.sidebar.button("Retry connection"):
-    st.rerun()
-st.sidebar.markdown("---")
-
 
 def fetch_json(path: str, show_error: bool = True):
     try:
@@ -82,6 +57,32 @@ def get_recommendations(payload: dict):
             except Exception:
                 pass
         return None
+
+
+st.sidebar.markdown("---")
+st.sidebar.markdown("**To fix \"Cannot reach API\"**")
+st.sidebar.markdown("Start the Phase 4 API in a **separate** PowerShell terminal:")
+st.sidebar.code(
+    "cd path\\to\\first-genAI-project\n"
+    "Import-Module .\\phase4_api\\src\\Phase4Api.psm1 -Force\n"
+    "Start-Phase4ApiServer -Port 8080 "
+    "-DataCsvPath \".\\phase4_api\\tests\\fixtures\\restaurants_processed.csv\" "
+    "-StaticRootPath \".\\phase5_ui\\public\" -DotEnvPath \".\\data\\.env\"",
+    language="powershell",
+)
+st.sidebar.markdown("Then refresh this page or click **Get recommendations**.")
+st.sidebar.markdown("---")
+
+# API status
+api_ok = check_api_health()
+if api_ok:
+    st.sidebar.success(f"API OK: {API_BASE.rstrip('/')}")
+else:
+    st.sidebar.error(f"Cannot reach API at {API_BASE}")
+    st.sidebar.markdown("Try **http://127.0.0.1:8080** if you use **localhost**.")
+if st.sidebar.button("Retry connection"):
+    st.rerun()
+st.sidebar.markdown("---")
 
 
 # Header
