@@ -33,29 +33,36 @@ st.sidebar.code(
 st.sidebar.markdown("Then refresh this page or click **Get recommendations**.")
 st.sidebar.markdown("---")
 
+# API status
+api_ok = check_api_health()
+if api_ok:
+    st.sidebar.success(f"API OK: {API_BASE.rstrip('/')}")
+else:
+    st.sidebar.error(f"Cannot reach API at {API_BASE}")
+    st.sidebar.markdown("Try **http://127.0.0.1:8080** if you use **localhost**.")
+if st.sidebar.button("Retry connection"):
+    st.rerun()
+st.sidebar.markdown("---")
 
-def fetch_json(path: str):
+
+def fetch_json(path: str, show_error: bool = True):
     try:
         r = requests.get(f"{API_BASE.rstrip('/')}{path}", timeout=10)
         r.raise_for_status()
         return r.json()
     except Exception as e:
-        st.sidebar.error(f"Cannot reach API: {e}")
+        if show_error:
+            st.sidebar.error(f"Cannot reach API: {e}")
         return None
 
 
-def fetch_places():
-    data = fetch_json("/places")
-    if data and "places" in data:
-        return data["places"]
-    return []
-
-
-def fetch_cuisines():
-    data = fetch_json("/cuisines")
-    if data and "cuisines" in data:
-        return data["cuisines"]
-    return []
+def check_api_health():
+    """Return True if API is reachable."""
+    try:
+        r = requests.get(f"{API_BASE.rstrip('/')}/health", timeout=5)
+        return r.status_code == 200
+    except Exception:
+        return False
 
 
 def get_recommendations(payload: dict):
@@ -82,12 +89,22 @@ st.title("🍽️ Restaurant Recommendations")
 st.caption("Set your preferences and get AI-powered restaurant suggestions (Groq).")
 
 # Load options from API
-places = fetch_places()
-cuisines = fetch_cuisines()
+places_resp = fetch_json("/places", show_error=False)
+if places_resp and "places" in places_resp:
+    places = places_resp["places"]
+else:
+    places = []
+
+cuisines_resp = fetch_json("/cuisines", show_error=False)
+if cuisines_resp and "cuisines" in cuisines_resp:
+    cuisines = cuisines_resp["cuisines"]
+else:
+    cuisines = []
 
 if not places and not cuisines:
     st.warning(
-        "Could not load places/cuisines. Ensure the Phase 4 API is running and the base URL is correct."
+        "Could not load places/cuisines. **Start the Phase 4 API** in a separate PowerShell terminal (see sidebar), "
+        "or try **API base URL** = `http://127.0.0.1:8080` instead of localhost. Then click **Retry connection** in the sidebar."
     )
 
 place_labels = [p.get("label") or f"{p.get('city', '')}, {p.get('locality', '')}".strip(", ") or "Unknown" for p in places]
